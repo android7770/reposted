@@ -54,7 +54,7 @@ class CentralManagerDelegate(NSObject):  # type: ignore
             instance,
             dispatch_queue_create(_QUEUE_NAME, DISPATCH_QUEUE_SERIAL),
         )
-        return instance
+        return instance  # type: ignore
 
     def centralManagerDidUpdateState_(  # noqa: N802, WPS120
         self,
