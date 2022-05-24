@@ -1,11 +1,16 @@
-import objc
-from typing import Final, final
 import asyncio
+from typing import Final, final
+
+import objc
+from CoreBluetooth import (
+    CBCentralManager,
+    CBManagerStatePoweredOff,
+    CBManagerStatePoweredOn,
+)
 from Foundation import NSObject
-from CoreBluetooth import CBCentralManager, CBManagerStatePoweredOff, CBManagerStatePoweredOn
-from libdispatch import dispatch_queue_create, DISPATCH_QUEUE_SERIAL
-from stream_deck import StreamDeckExchange
+from libdispatch import DISPATCH_QUEUE_SERIAL, dispatch_queue_create
 from logger import logger
+from stream_deck import StreamDeckExchange
 
 _ToggleStates: Final = frozenset((
     CBManagerStatePoweredOff,  # 4
@@ -19,14 +24,18 @@ _QUEUE_NAME: Final = b'com.sobolevn.bluetooth'
 
 @final
 class CentralManagerDelegate(NSObject):  # type: ignore
+    """Instance of CBCentralManagerDelegate."""
+
     _exchange: StreamDeckExchange
+    _loop: asyncio.BaseEventLoop
 
     @objc.python_method
     def init_with_exchange(
-        self, 
+        self,
         exchange: StreamDeckExchange,
         loop: asyncio.BaseEventLoop,
     ) -> 'CentralManagerDelegate':
+        """Initializes and sets extra props. Use this method."""
         self.init()
         self._exchange = exchange
         self._loop = loop
@@ -37,22 +46,25 @@ class CentralManagerDelegate(NSObject):  # type: ignore
     ___pyobjc_protocols__ = [_CBCentralManagerDelegate]
 
     def init(self) -> 'CentralManagerDelegate':
-        """MacOS init function for NSObject."""
-        self = objc.super(CentralManagerDelegate, self).init()
-        self.central_manager = CBCentralManager.alloc().initWithDelegate_queue_(
-            self, 
+        """Init function for NSObject."""
+        instance = objc.super(CentralManagerDelegate, self).init()
+
+        manager = CBCentralManager.alloc()
+        instance.central_manager = manager.initWithDelegate_queue_(
+            instance,
             dispatch_queue_create(_QUEUE_NAME, DISPATCH_QUEUE_SERIAL),
         )
-        return self
+        return instance
 
-    def centralManagerDidUpdateState_(
-        self, 
-        centralManager: CBCentralManager,
+    def centralManagerDidUpdateState_(  # noqa: N802, WPS120
+        self,
+        central_manager: CBCentralManager,
     ) -> None:
-        state = centralManager.state()
+        """Executed when bluetooth is enabled/disabled in system settings."""
+        state = central_manager.state()
         logger.info('Got bluetooth state change to {0}'.format(state))
         if state in _ToggleStates:
             asyncio.run_coroutine_threadsafe(
-                self._exchange.notify_state_change(state), 
+                self._exchange.notify_state_change(state),
                 self._loop,
             )

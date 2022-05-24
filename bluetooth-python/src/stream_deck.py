@@ -1,9 +1,11 @@
-from typing import Final, Optional, final, Dict, Any, Union
-from websockets.legacy.client import connect as ws_connect, WebSocketClientProtocol
 import json
+import uuid
+from typing import Any, Dict, Final, Optional, Union, final
+
 import bluetooth
 from logger import logger
-import uuid
+from websockets.legacy.client import WebSocketClientProtocol
+from websockets.legacy.client import connect as ws_connect
 
 _WS_URI: Final = 'ws://127.0.0.1:{port}'
 _JsonType = Dict[str, Any]
@@ -11,33 +13,38 @@ _JsonType = Dict[str, Any]
 
 @final
 class StreamDeckExchange(object):
+    """Websocket event exchange with Elgato StreamDeck."""
+
     def __init__(self) -> None:
+        """Nothing fancy here."""
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._controller = _BluetoothMessageController()
 
     async def start(
-        self, 
-        port: int, 
-        register_event: str, 
+        self,
+        port: int,
+        register_event: str,
         plugin_uuid: str,
     ) -> None:
+        """Run websocket and listen for events."""
         self._websocket = await ws_connect(_WS_URI.format(port=port))
         logger.info('Websocket connection is created on port {0}'.format(port))
 
         # Complete the mandatory Stream Deck Plugin registration procedure:
         await self._send_message({
             'event': register_event,
-            'uuid': plugin_uuid
+            'uuid': plugin_uuid,
         })
         logger.info('Plugin registration is succesful')
 
-        try:
+        try:  # noqa: WPS501
             # This is an infinite loop until the connection dies:
             await self._message_receive_loop()
         finally:
             await self._websocket.close()
 
     async def notify_state_change(self, state: int) -> None:
+        """Used by `delegate` to tell that system's state has changed."""
         await self._process_inbound_message('{"event": "willAppear"}')
 
     async def _message_receive_loop(self) -> None:
@@ -52,12 +59,12 @@ class StreamDeckExchange(object):
                 await self._process_inbound_message(message)
             except Exception as exc:
                 # Some things might go wrong during this process.
-                # We don't want the whole thing to fail. 
+                # We don't want the whole thing to fail.
                 # So, just log the error.
                 logger.error(exc)
 
     async def _process_inbound_message(
-        self, 
+        self,
         message: Union[str, bytes],
     ) -> None:
         if isinstance(message, bytes):
@@ -88,7 +95,7 @@ class _BluetoothMessageController(object):
 
     def _handle_key_up(self) -> None:
         bluetooth.toggle_bluetooth_state()
-    
+
     def _handle_will_appear(self) -> _JsonType:
         return {
             'event': 'setState',
