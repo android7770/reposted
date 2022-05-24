@@ -1,0 +1,35 @@
+{
+  "Actions": [
+    {
+      "Icon": "action/images/action-0-icon", 
+      "Name": "Bluetooth Switcher", 
+      "States": [
+        {
+          "Image": "action/images/bluetooth-inactive"
+        },
+        {
+          "Image": "action/images/bluetooth-active"
+        }
+      ], 
+      "Tooltip": "Bluetooth Switcher", 
+      "UUID": "com.sobolevn.bluetooth.action"
+    }
+  ], 
+  "SDKVersion": 2,
+  "Author": "sobolevn",
+  "Name": "Bluetooth Switcher", 
+  "Description": "Shows your Bluetooth status and allows to toggle it",
+  "Icon": "action/images/icon", 
+  "URL": "https://github.com/sobolevn/bluetooth-streamdeck-plugin", 
+  "Version": "1.0.0",
+  "OS": [
+    {
+      "Platform": "mac", 
+      "MinimumVersion": "10.11"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "4.1"
+  },
+  "CodePathMac": "dist/macos/main/main"
+}

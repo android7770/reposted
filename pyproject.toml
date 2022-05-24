@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "bluetooth-streamdeck-plugin"
+version = "0.0.0"
+description = "This is not on PyPI"
+authors = ["sobolevn <mail@sobolevn.me>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "3.9"
+
+[tool.poetry.dev-dependencies]
+wemake-python-styleguide = "^0.16.1"
+mypy = "^0.950"
+nitpick = "^0.32.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.nitpick]
+style = "https://raw.githubusercontent.com/wemake-services/wemake-python-styleguide/master/styles/nitpick-style-wemake.toml"

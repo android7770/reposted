@@ -1,0 +1,3 @@
+pyobjc-framework-CoreBluetooth==8.5
+pyobjc-framework-libdispatch==8.5
+websockets==10.3
