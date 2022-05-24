@@ -20,5 +20,5 @@ build: python-dist plugin
 
 .PHONY: lint
 lint:
-	mypy bluetooth-python
-	flake8 bluetooth-python
+	poetry run mypy bluetooth-python
+	poetry run flake8 bluetooth-python

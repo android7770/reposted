@@ -1,5 +1,7 @@
 # Elgato StreamDeck Bluetooth Plugin
 
+[![test](https://github.com/sobolevn/bluetooth-streamdeck-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/sobolevn/bluetooth-streamdeck-plugin/actions/workflows/test.yml)
+
 Allows you to toggle your bluetooth state from the StreamDeck.
 
 
@@ -30,7 +32,7 @@ Then run `pip install -r bluetooth-python/requirements.txt`
 
 We use `pyinstaller` to do that.
 Make sure you run `pip install pyinstaller` in your `venv`.
-It is not listed 
+It is not listed
 And then run `make python-dist`
 
 ### Creating a StreamDeck plugin
@@ -42,7 +44,7 @@ Run `make plugin` to create a release after python dist is created.
 ### CI
 
 We use `poetry` and `pyproject.toml` to specify dev-only dependencies.
-This is required because we use `pyinstaller` 
+This is required because we use `pyinstaller`
 and we don't want to polute `requirements.txt` and production env.
 
 
