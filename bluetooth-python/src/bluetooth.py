@@ -17,7 +17,7 @@ bundle = objc.loadBundle(
     ),
 )
 if not bundle:
-    raise RuntimeError('Failed to load IOBluetooth framework')
+    _fail('Failed to load IOBluetooth framework')
 
 # Request handles to functions:
 function_specs = [
