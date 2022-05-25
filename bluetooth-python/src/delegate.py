@@ -65,6 +65,6 @@ class CentralManagerDelegate(NSObject):  # type: ignore
         logger.info('Got bluetooth state change to {0}'.format(state))
         if state in _ToggleStates:
             asyncio.run_coroutine_threadsafe(
-                self._exchange.notify_state_change(state),
+                self._exchange.notify_state_change(),
                 self._loop,
             )

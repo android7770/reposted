@@ -1,5 +1,4 @@
 import json
-import uuid
 from typing import Any, Dict, Final, Optional, Union, final
 
 import bluetooth
@@ -18,6 +17,7 @@ class StreamDeckExchange(object):
     def __init__(self) -> None:
         """Nothing fancy here."""
         self._websocket: Optional[WebSocketClientProtocol] = None
+        self._context: Optional[str] = None
         self._controller = _BluetoothMessageController()
 
     async def start(
@@ -43,7 +43,7 @@ class StreamDeckExchange(object):
         finally:
             await self._websocket.close()
 
-    async def notify_state_change(self, state: int) -> None:
+    async def notify_state_change(self) -> None:
         """Used by `delegate` to tell that system's state has changed."""
         await self._process_inbound_message('{"event": "willAppear"}')
 
@@ -71,35 +71,49 @@ class StreamDeckExchange(object):
             message = message.decode('utf-8')
 
         logger.info('Got ws message: {0}'.format(message))
-
         parsed = json.loads(message)
-        reply = self._controller.handle_event(parsed)
+
+        self._maybe_store_context(parsed)
+        assert self._context is not None, 'Context is missing for some reason'
+
+        reply = self._controller.handle_event(parsed, self._context)
         if reply is not None:
             await self._send_message(reply)
 
     async def _send_message(self, payload: _JsonType) -> None:
         assert self._websocket is not None, 'Please, call `.start()` first'
+
         await self._websocket.send(json.dumps(payload))
         logger.info('Sent payload: {0}'.format(payload))
+
+    def _maybe_store_context(self, payload: _JsonType) -> None:
+        context = payload.get('context')
+        if context is not None and context != self._context:
+            self._context = context
+            logger.info('Got new plugin context: {0}'.format(context))
 
 
 @final
 class _BluetoothMessageController(object):
-    def handle_event(self, payload: _JsonType) -> Optional[_JsonType]:
+    def handle_event(
+        self,
+        payload: _JsonType,
+        context: str,
+    ) -> Optional[_JsonType]:
         event_type = payload['event']
         if event_type == 'keyUp':
             self._handle_key_up()
         elif event_type == 'willAppear':
-            return self._handle_will_appear()
+            return self._handle_will_appear(context)
         return None
 
     def _handle_key_up(self) -> None:
         bluetooth.toggle_bluetooth_state()
 
-    def _handle_will_appear(self) -> _JsonType:
+    def _handle_will_appear(self, context: str) -> _JsonType:
         return {
             'event': 'setState',
-            'context': str(uuid.uuid4()),
+            'context': context,
             'payload': {
                 'state': bluetooth.get_bluetooth_state(),
             },

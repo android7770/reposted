@@ -1,13 +1,7 @@
-from typing import Any, Callable, Dict, NoReturn
+from typing import Any, Callable, Dict
 
 import objc
-from logger import logger
-
-
-def _fail(message: str) -> NoReturn:
-    logger.critical(message)
-    raise RuntimeError(message)
-
+from logger import fail
 
 bundle = objc.loadBundle(
     'IOBluetooth',
@@ -17,7 +11,7 @@ bundle = objc.loadBundle(
     ),
 )
 if not bundle:
-    _fail('Failed to load IOBluetooth framework')
+    fail('Failed to load IOBluetooth framework')
 
 # Request handles to functions:
 function_specs = [
@@ -27,10 +21,10 @@ function_specs = [
 namespace: Dict[str, Any] = {}
 objc.loadBundleFunctions(bundle, namespace, function_specs)
 
-# Cid we get everything we need?
+# Did we get everything we need?
 for function_name, _ in function_specs:
     if function_name not in namespace:
-        _fail('Failed to load: {0}'.format(function_name))
+        fail('Failed to load: {0}'.format(function_name))
 
 _bs_getter: Callable[[], int] = namespace[function_specs[0][0]]
 _bs_setter: Callable[[int], int] = namespace[function_specs[1][0]]
