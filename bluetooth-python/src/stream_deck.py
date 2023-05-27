@@ -115,7 +115,7 @@ class _BluetoothMessageController(object):
     def _handle_will_appear(
         self,
         context: Optional[str],
-    ) -> Optional[_JsonType]:
+    ) -> Optional[Tuple[int, _JsonType]]:
         if context is None:
             return None  # We don't have a context yet to send a message.
 
