@@ -1,12 +1,14 @@
+import asyncio
 import json
-from typing import Any, Dict, Final, Optional, Union, final
+from typing import Any, Dict, Final, Optional, Tuple, Union, final
 
 import bluetooth
 from logger import logger
 from websockets.legacy.client import WebSocketClientProtocol
 from websockets.legacy.client import connect as ws_connect
 
-_WS_URI: Final = 'ws://127.0.0.1:{port}'
+_WS_URI_TEMPLATE: Final = 'ws://localhost:{port}'
+_WS_PAYLOAD: Final = '{"event": "willAppear"}'
 _JsonType = Dict[str, Any]
 
 
@@ -19,6 +21,7 @@ class StreamDeckExchange(object):
         self._websocket: Optional[WebSocketClientProtocol] = None
         self._context: Optional[str] = None
         self._controller = _BluetoothMessageController()
+        self._bluetooth_state: Optional[int] = None
 
     async def start(
         self,
@@ -27,7 +30,7 @@ class StreamDeckExchange(object):
         plugin_uuid: str,
     ) -> None:
         """Run websocket and listen for events."""
-        self._websocket = await ws_connect(_WS_URI.format(port=port))
+        self._websocket = await ws_connect(_WS_URI_TEMPLATE.format(port=port))
         logger.info('Websocket connection is created on port {0}'.format(port))
 
         # Complete the mandatory Stream Deck Plugin registration procedure:
@@ -37,15 +40,21 @@ class StreamDeckExchange(object):
         })
         logger.info('Plugin registration is succesful')
 
+        asyncio.create_task(  # type: ignore[unused-awaitable]
+            self._update_periodically(0.1),
+        )
+
         try:  # noqa: WPS501
             # This is an infinite loop until the connection dies:
             await self._message_receive_loop()
         finally:
             await self._websocket.close()
 
-    async def notify_state_change(self) -> None:
-        """Used by `delegate` to tell that system's state has changed."""
-        await self._process_inbound_message('{"event": "willAppear"}')
+    async def _update_periodically(self, period: float) -> None:
+        # Technically, this loop never ends, but that's the whole point.
+        while True:  # noqa: WPS457
+            await asyncio.sleep(period)
+            await self._process_inbound_message(_WS_PAYLOAD)
 
     async def _message_receive_loop(self) -> None:
         """
@@ -55,13 +64,7 @@ class StreamDeckExchange(object):
         """
         assert self._websocket is not None, 'Please, call `.start()` first'
         async for message in self._websocket:
-            try:
-                await self._process_inbound_message(message)
-            except Exception as exc:
-                # Some things might go wrong during this process.
-                # We don't want the whole thing to fail.
-                # So, just log the error.
-                logger.error(exc)
+            await self._process_inbound_message(message)
 
     async def _process_inbound_message(
         self,
@@ -70,15 +73,14 @@ class StreamDeckExchange(object):
         if isinstance(message, bytes):
             message = message.decode('utf-8')
 
-        logger.info('Got ws message: {0}'.format(message))
+        # You can log the message here, but it take a lot of space on disk:
         parsed = json.loads(message)
 
         self._maybe_store_context(parsed)
-        assert self._context is not None, 'Context is missing for some reason'
-
         reply = self._controller.handle_event(parsed, self._context)
-        if reply is not None:
-            await self._send_message(reply)
+        if reply is not None and self._bluetooth_state != reply[0]:
+            self._bluetooth_state = reply[0]
+            await self._send_message(reply[1])
 
     async def _send_message(self, payload: _JsonType) -> None:
         assert self._websocket is not None, 'Please, call `.start()` first'
@@ -98,8 +100,8 @@ class _BluetoothMessageController(object):
     def handle_event(
         self,
         payload: _JsonType,
-        context: str,
-    ) -> Optional[_JsonType]:
+        context: Optional[str],
+    ) -> Optional[Tuple[int, _JsonType]]:
         event_type = payload['event']
         if event_type == 'keyUp':
             self._handle_key_up()
@@ -110,11 +112,18 @@ class _BluetoothMessageController(object):
     def _handle_key_up(self) -> None:
         bluetooth.toggle_bluetooth_state()
 
-    def _handle_will_appear(self, context: str) -> _JsonType:
-        return {
+    def _handle_will_appear(
+        self,
+        context: Optional[str],
+    ) -> Optional[_JsonType]:
+        if context is None:
+            return None  # We don't have a context yet to send a message.
+
+        state = bluetooth.get_bluetooth_state()
+        return state, {
             'event': 'setState',
             'context': context,
             'payload': {
-                'state': bluetooth.get_bluetooth_state(),
+                'state': state,
             },
         }

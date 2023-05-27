@@ -2,7 +2,6 @@ import argparse
 import asyncio
 from typing import Protocol
 
-from delegate import CentralManagerDelegate
 from logger import logger
 from stream_deck import StreamDeckExchange
 
@@ -22,16 +21,18 @@ def _parse_cli_args() -> _ParsedArgs:
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-port', type=int)
+    parser.add_argument('-port', type=int, required=True)
     parser.add_argument(
         '-pluginUUID',
         dest='plugin_uuid',
         type=str,
+        required=True,
     )
     parser.add_argument(
         '-registerEvent',
         dest='register_event',
         type=str,
+        required=True,
     )
 
     # Ignore unknown args in case a Stream Deck update
@@ -47,7 +48,6 @@ if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
     exchange = StreamDeckExchange()
-    delegate = CentralManagerDelegate.alloc().init_with_exchange(exchange, loop)
 
     try:
         loop.run_until_complete(
