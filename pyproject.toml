@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "bluetooth-streamdeck-plugin"
 # Must match `manifest.json`
-version = "1.1.0"
+version = "1.1.1"
 description = "This is not on PyPI"
 authors = ["sobolevn <mail@sobolevn.me>"]
 license = "MIT"
