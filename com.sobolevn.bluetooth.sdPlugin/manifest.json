@@ -21,7 +21,7 @@
   "Description": "Shows your Bluetooth status and allows to toggle it",
   "Icon": "action/images/icon",
   "URL": "https://github.com/sobolevn/bluetooth-streamdeck-plugin",
-  "Version": "1.1.1",
+  "Version": "1.1.2",
   "OS": [
     {
       "Platform": "mac",
